@@ -20,18 +20,22 @@ This project is not affiliated with Nintendo, The Pokémon Company, Tencent, or 
 
 ## Project Scope
 
+- Back up as many game files as possible (APK)
+- Back up assets (if users agree)
+- Back up player datas
+- Create a global database of contributors to help data migration
 The exact collection scope and data schema remain open for discussion.
 
 ## Contribution Workflow
 
 The proposed workflow is:
 
-1. The contributor runs the collection tools in their own environment.
-2. The tools collect and organize the available data.
+1. The contributor connects its phone to the pc
+2. The tools collect and organize the available data thought the ADB tool.
 3. A contribution package is generated.
 4. The contributor reviews the information through a GUI.
 5. The contributor explicitly approves or rejects the submission.
-6. Approved contributions are sent to the backend.
+6. Approved contributions are sent to the backend. (<- litteral humans)
 7. The backend validates and processes the data before adding it to the shared database.
 
 Users should never need direct database access or be required to edit or execute SQL statements.
@@ -48,9 +52,14 @@ The collection tools and APK remain on the contributor's local device. APKs and 
 
 ## Privacy and Security
 
+This tool **won't upload anything by default.** It is primarily meant to decentralize the game preservation and have as much fallback options as possible.
+
+If you choose to, the only data uploaded are informations about your profile. This will help create a database of players if data migration is implemented in the Revival project.
+The data uploaded is only the SQL query used to populate the database with your profile, no other data leaves your PC.
+
 - Participation and data submission must be voluntary.
 - Contributors should only submit data they own or are authorized to share.
-- Do not collect passwords, authentication tokens, session cookies, or other credentials.
+- We do not collect passwords, authentication tokens, session cookies, or other credentials.
 - Avoid exposing personal information belonging to other players.
 - Contributions must be reviewed before submission.
 - The backend must validate incoming data.
