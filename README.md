@@ -176,6 +176,19 @@ flowchart TB
     class REJECT rejectStyle
 ```
 
+### User Story
+
+```
+As a Pokémon UNITE player, I want a one-click installer for Windows that sets everything up automatically, with minimal user involvement. I should only need to enable Developer Mode on my Android device and connect it via USB.
+
+To log in, I should use my Discord account and be a member of the Pokémon UNITE Revival server.
+
+The application should have a very simple interface with just a few buttons. The main one should be Start Process. Once clicked, I can watch the program create a complete backup of my account data in the application's folder.
+
+When the backup is complete, the app should ask whether I want to validate my data and submit it to the community repository.
+
+Finally, I should receive a Discord DM confirming that the process was successful, along with a link to my file in the repository.
+```
 
 ## How to Contribute
 
