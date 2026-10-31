@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>PU-CDP · Data Collector</title>
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --border: #cbd5e1;
+            --text: #0f172a;
+            --muted: #475569;
+            --track: #e2e8f0;
+            --accent: #0369a1;
+            --accent-hover: #075985;
+            --on-accent: #ffffff;
+            --success: #15803d;
+            --danger: #b91c1c;
+            color-scheme: light;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f172a;
+                --surface: #1e293b;
+                --border: #334155;
+                --text: #e2e8f0;
+                --muted: #94a3b8;
+                --track: #334155;
+                --accent: #38bdf8;
+                --accent-hover: #7dd3fc;
+                --on-accent: #0f172a;
+                --success: #4ade80;
+                --danger: #f87171;
+                color-scheme: dark;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            width: min(960px, 100%);
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            grid-auto-rows: min-content;
+            gap: 16px;
+            align-content: start;
+        }
+
+        /* Two-column layout: blocks 1 and 2 on the left, block 3 on the right */
+        header {
+            grid-column: 1 / -1;
+            grid-row: 1;
+        }
+
+        #setup-card {
+            grid-column: 1;
+            grid-row: 2;
+        }
+
+        #progress-card {
+            grid-column: 1;
+            grid-row: 3;
+        }
+
+        #submit-card {
+            grid-column: 2;
+            grid-row: 2 / span 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #submit-card .actions {
+            margin-top: auto;
+        }
+
+        #result-card {
+            grid-column: 2;
+            grid-row: 4;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        header p {
+            margin: 4px 0 0;
+            color: var(--muted);
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .card h2 {
+            margin: 0 0 12px;
+            font-size: 1.05rem;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .toggle {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            cursor: pointer;
+        }
+
+        .toggle small {
+            display: block;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            flex-shrink: 0;
+            accent-color: var(--accent);
+        }
+
+        button {
+            font: inherit;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        a:focus-visible {
+            outline: 3px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .primary {
+            background: var(--accent);
+            color: var(--on-accent);
+            font-weight: 600;
+        }
+
+        .primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        .secondary {
+            background: transparent;
+            color: var(--text);
+            border-color: var(--border);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .progress {
+            height: 10px;
+            background: var(--track);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+
+        #status-text {
+            margin: 12px 0 8px;
+            font-weight: 600;
+        }
+
+        .log {
+            list-style: none;
+            margin: 12px 0 0;
+            padding: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+            background: var(--bg);
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.85rem;
+        }
+
+        .log li {
+            padding: 2px 0;
+        }
+
+        .log .time {
+            color: var(--muted);
+            margin-right: 8px;
+        }
+
+        .log .success {
+            color: var(--success);
+        }
+
+        .log .error {
+            color: var(--danger);
+        }
+
+        dl.summary {
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            gap: 6px 16px;
+            margin: 0;
+        }
+
+        dl.summary dt {
+            color: var(--muted);
+        }
+
+        dl.summary dd {
+            margin: 0;
+        }
+
+        .result {
+            color: var(--success);
+        }
+
+        .result a {
+            color: var(--accent);
+        }
+
+        dialog {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            width: min(480px, calc(100% - 32px));
+        }
+
+        dialog::backdrop {
+            background: rgb(0 0 0 / 0.55);
+        }
+
+        dialog h2 {
+            margin: 0 0 12px;
+            font-size: 1.15rem;
+        }
+
+        dialog ul {
+            margin: 8px 0 16px;
+            padding-left: 20px;
+            color: var(--muted);
+        }
+
+        dialog label {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            cursor: pointer;
+        }
+
+        /* Stack everything in one column on narrow screens */
+        @media (max-width: 760px) {
+            .app {
+                grid-template-columns: 1fr;
+            }
+
+            header,
+            #setup-card,
+            #progress-card,
+            #submit-card,
+            #result-card {
+                grid-column: 1;
+                grid-row: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="app">
+
+        <header>
+            <h1>PU-CDP</h1>
+            <p>Pokémon UNITE Community Data Preservation</p>
+        </header>
+
+        <!-- Step 1: options and start -->
+        <section class="card" id="setup-card" aria-labelledby="setup-title">
+            <h2 id="setup-title">1. Backup options</h2>
+
+            <label class="toggle">
+                <input type="checkbox" id="backup-assets">
+                <span>
+                    <strong>Back up game assets</strong>
+                    <small>Larger backup. Assets are stored on this PC only and are never submitted.</small>
+                </span>
+            </label>
+
+            <p class="muted" style="margin-top: 14px;">
+                Nothing is sent anywhere during the backup. Submission is only possible after your explicit approval in
+                step 3.
+            </p>
+
+            <div class="actions">
+                <button type="button" id="start-btn" class="primary">Start Process</button>
+            </div>
+        </section>
+
+        <!-- Step 2: progress -->
+        <section class="card" id="progress-card" aria-labelledby="progress-title" hidden>
+            <h2 id="progress-title">2. Progress</h2>
+
+            <div class="progress" id="progress-track" role="progressbar" aria-label="Backup progress" aria-valuemin="0"
+                aria-valuemax="100" aria-valuenow="0">
+                <div id="progress-bar"></div>
+            </div>
+
+            <p id="status-text" aria-live="polite">Waiting…</p>
+
+            <ul class="log" id="log" aria-label="Activity log"></ul>
+        </section>
+
+        <!-- Step 3: submission -->
+        <section class="card" id="submit-card" aria-labelledby="submit-title" hidden>
+            <h2 id="submit-title">3. Submit to the community repository</h2>
+
+            <dl class="summary" id="summary"></dl>
+
+            <p class="muted" style="margin-top: 14px;">
+                Submitting is optional. Your data is only sent after you confirm.
+            </p>
+
+            <div class="actions">
+                <button type="button" id="submit-btn" class="secondary">Submit data…</button>
+            </div>
+        </section>
+
+        <!-- Result -->
+        <section class="card result" id="result-card" aria-live="polite" hidden>
+            <p id="result-text" style="margin: 0;"></p>
+        </section>
+
+    </main>
+
+    <!-- Confirmation dialog: submission requires explicit approval -->
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+        <h2 id="confirm-title">Confirm submission</h2>
+
+        <p class="muted">The following will be sent to the public community repository:</p>
+        <ul>
+            <li>Profile information generated from your backup.</li>
+            <li>Game assets are <strong>not</strong> included.</li>
+        </ul>
+
+        <label>
+            <input type="checkbox" id="confirm-check">
+            <span>I approve this submission, and I own or am authorized to share this data.</span>
+        </label>
+
+        <div class="actions">
+            <button type="button" id="cancel-btn" class="secondary">Cancel</button>
+            <button type="button" id="confirm-btn" class="primary" disabled>Submit</button>
+        </div>
+    </dialog>
+
+    <script>
+        'use strict';
+
+        /* ==========================================================================
+           DOM references
+           ========================================================================== */
+        const el = {
+            backupAssets: document.getElementById('backup-assets'),
+            startBtn: document.getElementById('start-btn'),
+            progressCard: document.getElementById('progress-card'),
+            progressBar: document.getElementById('progress-bar'),
+            progressTrack: document.getElementById('progress-track'),
+            statusText: document.getElementById('status-text'),
+            log: document.getElementById('log'),
+            submitCard: document.getElementById('submit-card'),
+            summary: document.getElementById('summary'),
+            submitBtn: document.getElementById('submit-btn'),
+            resultCard: document.getElementById('result-card'),
+            resultText: document.getElementById('result-text'),
+            dialog: document.getElementById('confirm-dialog'),
+            confirmCheck: document.getElementById('confirm-check'),
+            confirmBtn: document.getElementById('confirm-btn'),
+            cancelBtn: document.getElementById('cancel-btn'),
+        };
+
+        /* ==========================================================================
+           Backend bridge
+           In Electron, preload.js exposes window.electronAPI through contextBridge.
+           Expected contract:
+             startBackup({ backupAssets })  -> Promise<{ profile, filesCount, assetsIncluded }>
+             onProgress(callback)           -> callback receives { percent, message }
+             submitBackup()                 -> Promise<{ success, url?, error? }>
+           Outside Electron, a simulated backend is used so the page can be previewed.
+           ========================================================================== */
+        const backend = window.electronAPI ?? createMockBackend();
+
+        /* ==========================================================================
+           UI helpers
+           ========================================================================== */
+        function showSection(section, visible) {
+            section.hidden = !visible;
+        }
+
+        function setRunning(isRunning) {
+            el.startBtn.disabled = isRunning;
+            el.backupAssets.disabled = isRunning;
+        }
+
+        function setProgress(percent, message) {
+            const value = Math.max(0, Math.min(100, Math.round(percent)));
+            el.progressBar.style.width = `${value}%`;
+            el.progressTrack.setAttribute('aria-valuenow', String(value));
+            if (message) {
+                el.statusText.textContent = message;
+            }
+        }
+
+        function logMessage(text, type = 'info') {
+            const item = document.createElement('li');
+            item.className = type;
+
+            const time = document.createElement('span');
+            time.className = 'time';
+            time.textContent = new Date().toLocaleTimeString('en-GB');
+
+            item.append(time, text);
+            el.log.append(item);
+            item.scrollIntoView({ block: 'nearest' });
+        }
+
+        function renderSummary({ profile, filesCount, assetsIncluded }) {
+            const rows = [
+                ['Profile', profile],
+                ['Files backed up', String(filesCount)],
+                ['Game assets', assetsIncluded ? 'Included (kept local, never submitted)' : 'Not included'],
+            ];
+
+            el.summary.textContent = '';
+            for (const [label, value] of rows) {
+                const term = document.createElement('dt');
+                term.textContent = label;
+                const detail = document.createElement('dd');
+                detail.textContent = value;
+                el.summary.append(term, detail);
+            }
+        }
+
+        function isSafeUrl(value) {
+            try {
+                return new URL(value).protocol === 'https:';
+            } catch {
+                return false;
+            }
+        }
+
+        function showResult(url) {
+            el.resultText.textContent = 'Your data was submitted successfully. ';
+
+            if (isSafeUrl(url)) {
+                const link = document.createElement('a');
+                link.href = url;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = 'View your file in the repository';
+                el.resultText.append(link);
+            }
+
+            showSection(el.resultCard, true);
+        }
+
+        function resetUi() {
+            el.log.textContent = '';
+            setProgress(0, 'Starting…');
+            showSection(el.submitCard, false);
+            showSection(el.resultCard, false);
+            el.submitBtn.disabled = false;
+        }
+
+        /* ==========================================================================
+           Step 1 & 2: backup
+           ========================================================================== */
+        async function startProcess() {
+            resetUi();
+            showSection(el.progressCard, true);
+            setRunning(true);
+            logMessage('Starting backup…');
+
+            try {
+                const summary = await backend.startBackup({
+                    backupAssets: el.backupAssets.checked,
+                });
+
+                renderSummary(summary);
+                setProgress(100, 'Backup complete.');
+                logMessage('Backup complete. You can now review and optionally submit your data.', 'success');
+                showSection(el.submitCard, true);
+            } catch (err) {
+                setProgress(0, 'Backup failed.');
+                logMessage(`Error: ${err?.message ?? err}`, 'error');
+            } finally {
+                setRunning(false);
+            }
+        }
+
+        function handleProgress({ percent, message }) {
+            setProgress(percent, message);
+            logMessage(message);
+        }
+
+        /* ==========================================================================
+           Step 3: submission (always requires explicit confirmation)
+           ========================================================================== */
+        function openConfirmation() {
+            el.confirmCheck.checked = false;
+            el.confirmBtn.disabled = true;
+            el.dialog.showModal();
+        }
+
+        async function submitBackup() {
+            el.submitBtn.disabled = true;
+            logMessage('Submitting data to the community repository…');
+
+            try {
+                const result = await backend.submitBackup();
+                if (!result?.success) {
+                    throw new Error(result?.error ?? 'Unknown error');
+                }
+
+                showResult(result.url);
+                logMessage('Submission successful.', 'success');
+            } catch (err) {
+                logMessage(`Submission failed: ${err?.message ?? err}`, 'error');
+                el.submitBtn.disabled = false;
+            }
+        }
+
+        /* ==========================================================================
+           Event wiring
+           ========================================================================== */
+        backend.onProgress(handleProgress);
+
+        el.startBtn.addEventListener('click', startProcess);
+        el.submitBtn.addEventListener('click', openConfirmation);
+
+        el.confirmCheck.addEventListener('change', () => {
+            el.confirmBtn.disabled = !el.confirmCheck.checked;
+        });
+
+        el.cancelBtn.addEventListener('click', () => el.dialog.close());
+
+        el.confirmBtn.addEventListener('click', () => {
+            el.dialog.close();
+            submitBackup();
+        });
+
+        /* ==========================================================================
+           Mock backend (browser preview only)
+           ========================================================================== */
+        function createMockBackend() {
+            let progressListener = () => { };
+            const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            const baseSteps = [
+                'Checking ADB connection…',
+                'Verifying Developer Mode…',
+                'Extracting account profile…',
+                'Reading player progress…',
+            ];
+
+            return {
+                onProgress(callback) {
+                    progressListener = callback;
+                },
+
+                async startBackup({ backupAssets }) {
+                    const steps = backupAssets
+                        ? [...baseSteps, 'Copying game assets…']
+                        : baseSteps;
+
+                    for (const [index, message] of steps.entries()) {
+                        await delay(700);
+                        progressListener({ percent: ((index + 1) / steps.length) * 100, message });
+                    }
+
+                    return { profile: 'Preview Player', filesCount: 42, assetsIncluded: backupAssets };
+                },
+
+                async submitBackup() {
+                    await delay(1200);
+                    return { success: true, url: 'https://github.com/' };
+                },
+            };
+        }
+    </script>
+</body>
+
+</html>
