@@ -77,6 +77,106 @@ We aim to provide a standardized, reproducible development environment using:
 
 The goal is to make participation accessible to developers with different levels of experience.
 
+### Architecture Overview
+
+```mermaid
+flowchart TB
+
+    subgraph ENV["🧑 User Environment"]
+        direction TB
+
+        subgraph PC["🖥️ Player's PC"]
+            direction TB
+
+            GUI["GUI Application<br/><i>Electron / Tauri / TBD</i>"]
+
+            subgraph DOCKER["🐳 Docker Compose Environment"]
+                direction TB
+
+                COLLECTOR["PU-CDP<br/>Data Collector"]
+                ADB["ADB<br/>Android Debug Bridge"]
+                DEPS["Required Dependencies"]
+
+                COLLECTOR --> DEPS
+                COLLECTOR --> ADB
+            end
+
+            APK["📦 APK Files<br/><i>Local only</i>"]
+            ASSETS["🎨 Game Assets<br/><i>Local only</i>"]
+            SQLQ["🔍 SQL Query<br/><i>Extract from APK</i>"]
+
+            GUI -->|"Controls"| COLLECTOR
+            APK --> COLLECTOR
+            ASSETS --> COLLECTOR
+            APK --> SQLQ
+        end
+
+        PHONE["📱 Android Device<br/>Pokémon UNITE"]
+
+        PHONE <-->|"🔌 USB connection"| ADB
+    end
+
+    subgraph SERVER["🏠 Home Server / Our PCs"]
+        direction TB
+
+        INTEGRITY["✅ Data Integrity<br/>Verification"]
+        CHECK{"Integrity<br/>passed?"}
+
+        INTEGRITY --> CHECK
+    end
+
+    subgraph GITHUB["🌐 Layer 3 — GitHub Community Data Repo"]
+        direction TB
+
+        PUSH["📤 User Pushes<br/>Approved JSON"]
+        REPO[("PU-Community-Data-Preservation<br/>Public JSON Archive<br/>Versioned Files")]
+
+        PUSH --> REPO
+    end
+
+    REJECT["⚠️ Rejected<br/><i>Fix &amp; retry</i>"]
+
+    SQLQ -->|"Raw data sent<br/>for verification"| INTEGRITY
+    CHECK -->|"❌ Fail"| REJECT
+    CHECK -->|"✅ Pass — push enabled"| PUSH
+
+    %% ===== STYLES =====
+    classDef envStyle fill:#020617,stroke:#475569,stroke-width:3px,color:#f1f5f9
+    classDef pcStyle fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#e2e8f0
+    classDef dockerStyle fill:#0f172a,stroke:#22d3ee,stroke-width:2px,stroke-dasharray: 6 4,color:#e2e8f0
+    classDef guiStyle fill:#7c3aed,stroke:#a78bfa,stroke-width:2px,color:#ffffff
+    classDef serviceStyle fill:#0891b2,stroke:#67e8f9,stroke-width:2px,color:#ffffff
+    classDef depStyle fill:#0e7490,stroke:#22d3ee,stroke-width:1.5px,color:#e0f2fe
+    classDef fileStyle fill:#334155,stroke:#94a3b8,stroke-width:1.5px,stroke-dasharray: 4 3,color:#cbd5e1
+    classDef phoneStyle fill:#be123c,stroke:#fb7185,stroke-width:2px,color:#ffffff
+    classDef sqlStyle fill:#d97706,stroke:#fbbf24,stroke-width:2px,color:#ffffff
+    classDef serverStyle fill:#052e16,stroke:#22c55e,stroke-width:3px,color:#dcfce7
+    classDef integrityStyle fill:#15803d,stroke:#4ade80,stroke-width:2px,color:#ffffff
+    classDef checkStyle fill:#1e3a8a,stroke:#60a5fa,stroke-width:2px,color:#ffffff
+    classDef githubStyle fill:#1e1b4b,stroke:#818cf8,stroke-width:3px,color:#e0e7ff
+    classDef pushStyle fill:#4338ca,stroke:#a5b4fc,stroke-width:2px,color:#ffffff
+    classDef repoStyle fill:#3730a3,stroke:#c7d2fe,stroke-width:2px,color:#eef2ff
+    classDef rejectStyle fill:#7f1d1d,stroke:#f87171,stroke-width:2px,color:#fecaca
+
+    class ENV envStyle
+    class PC pcStyle
+    class DOCKER dockerStyle
+    class GUI guiStyle
+    class COLLECTOR,ADB serviceStyle
+    class DEPS depStyle
+    class APK,ASSETS fileStyle
+    class PHONE phoneStyle
+    class SQLQ sqlStyle
+    class SERVER serverStyle
+    class INTEGRITY integrityStyle
+    class CHECK checkStyle
+    class GITHUB githubStyle
+    class PUSH pushStyle
+    class REPO repoStyle
+    class REJECT rejectStyle
+```
+
+
 ## How to Contribute
 
 Contributions are welcome in areas such as:
