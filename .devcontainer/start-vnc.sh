@@ -17,7 +17,7 @@ echo "==========================================================================
 # ── 1. Start Xvfb (Virtual Framebuffer Display) ──────────────────────────────
 echo "--> Starting Xvfb on display ${DISPLAY_NUM} (1920x1080x24)..."
 
-# Terminate existing Xvfb process on display :3 if present
+# Terminate existing Xvfb process on the configured display if present
 if pgrep -f "Xvfb.*${DISPLAY_NUM}" >/dev/null 2>&1; then
     echo "  Notice: Existing Xvfb instance detected. Terminating..."
     pkill -f "Xvfb.*${DISPLAY_NUM}" || true
@@ -47,14 +47,14 @@ if pgrep -f "x11vnc.*${VNC_PORT}" >/dev/null 2>&1; then
     sleep 1
 fi
 
-# Launch x11vnc server sharing display :3
+# Launch x11vnc server sharing the configured display
 x11vnc -display ${DISPLAY_NUM} -forever -shared -rfbport ${VNC_PORT} -nopw &
 sleep 2
 
 # Verify VNC port binding
 VNC_STARTED=false
 for i in 1 2 3; do
-    if lsof -i:${VNC_PORT} >/dev/null 2>&1 || grep -q "00000000:170C" /proc/net/tcp 2>/dev/null; then
+    if lsof -i:${VNC_PORT} >/dev/null 2>&1 || grep -q "00000000:170D" /proc/net/tcp 2>/dev/null; then
         VNC_STARTED=true
         break
     fi
@@ -71,7 +71,7 @@ fi
 # ── 3. Start noVNC (Browser-based Web VNC Proxy) ─────────────────────────────
 echo "--> Starting noVNC proxy on port ${NOVNC_PORT}..."
 
-# Terminate existing websockify/noVNC process on port 6080
+# Terminate existing websockify/noVNC process on the noVNC port
 if pgrep -f "websockify.*${NOVNC_PORT}" >/dev/null 2>&1; then
     echo "  Notice: Existing websockify instance detected. Terminating..."
     pkill -f "websockify.*${NOVNC_PORT}" || true
@@ -105,7 +105,7 @@ sleep 2
 # Verify noVNC port binding
 NOVNC_STARTED=false
 for i in 1 2 3; do
-    if lsof -i:${NOVNC_PORT} >/dev/null 2>&1 || grep -q "00000000:17C0" /proc/net/tcp 2>/dev/null; then
+    if lsof -i:${NOVNC_PORT} >/dev/null 2>&1 || grep -q "00000000:17C1" /proc/net/tcp 2>/dev/null; then
         NOVNC_STARTED=true
         break
     fi

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ── Container Orchestration Entrypoint ───────────────────────────────────────
 # Runs when Docker launches the container.
-# Initializes background infrastructure services (VNC Desktop and tun2socks)
-# in real-time, displaying all status messages and errors on screen.
+# Starts the VNC desktop stack in real time, displaying all status messages and
+# errors on screen. The tun2socks block below is currently disabled.
 # -----------------------------------------------------------------------------
 set -e
 
@@ -39,5 +39,5 @@ echo "==========================================================================
 echo "✅ CONTAINER DAEMONS INITIALIZED. Handing execution to CMD: $@"
 echo "=========================================================================="
 
-# ── 4. Pass Control to Container Command (sleep infinity) ────────────────────
+# ── 3. Pass Control to Container Command (sleep infinity) ────────────────────
 exec "$@"

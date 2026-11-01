@@ -19,24 +19,24 @@ services:
     env_file:
       - .env.dev
     volumes:
-      # Source code mount (bind) — repo's data/ is already persistent via this
+      # Source code mount (bind) — the whole repo, including data/, persists here
       - ..:/workspace:cached
     ports:
       # Two kinds of publish are allowed here; a third is not.
       #
       # Allowed: a bind whose host number DIFFERS from its container number
-      # (5910->5900, 6090->6080), because VS Code forwards the container port
+      # (5911->5901, 6091->6081), because VS Code forwards the container port
       # on the same number and cannot collide with it.
       #
       # Forbidden: a bind whose host number EQUALS the container number for a
       # port VS Code forwards. Those binds take the host's loopback port, so
       # the forward of the same number has nothing left to bind and fails.
-      # VS Code owns 8000 (Python API) and 5173 (Vite dev) via
-      # devcontainer.json `forwardPorts` — do not add host binds for them.
       - "127.0.0.1:5911:5901" # VNC
       - "127.0.0.1:6091:6081" # noVNC WebSocket / Web (iframe)
       # VS Code owns 8001 (Python API) and 5174 (Vite dev) via
-      # devcontainer.json `forwardPorts` — do not add host binds for them.# - "127.0.0.1:8010:8000" # Python API (host alias)
+      # devcontainer.json `forwardPorts` — do not add host binds for them.
+      # Allowed host-alias example for a VS Code-forwarded port:
+      # - "127.0.0.1:8011:8001" # Python API (host alias)
     networks:
       - pucdp_network
     # depends_on:

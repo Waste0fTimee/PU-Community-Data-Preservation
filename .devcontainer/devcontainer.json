@@ -1,7 +1,7 @@
 {
   // ── Container Metadata ──────────────────────────────────────────────────
   "name": "PU Community Data Preservation",
-  // TODO: renombra "service" si cambias el nombre del servicio en docker-compose.dev.yml
+  // TODO: rename "service" if you change the service name in docker-compose.dev.yml
   "service": "pucdp",
   "workspaceFolder": "/workspace",
   "remoteUser": "root",
@@ -15,11 +15,11 @@
   // ── Network Ports & Labels ──────────────────────────────────────────────
   // Forwarded port number == container port number. Do not add same-numbered
   // host binds in docker-compose.dev.yml — they silently steal the port the
-  // forward needs (see original note). Ports:
-  //   8000  → Python backend (uvicorn / fastapi)
-  //   5173  → React renderer (Vite dev server)
-  //   5900  → VNC
-  //   6080  → noVNC web
+  // forward needs. Ports:
+  //   8001  → Python backend (uvicorn / fastapi)
+  //   5174  → React renderer (Vite dev server)
+  //   5901  → VNC
+  //   6081  → noVNC web
   "portsAttributes": {
     "5901": { "label": "VNC Server" },
     "6081": { "label": "noVNC Web" },
@@ -35,25 +35,25 @@
 
   // ── Environment Variables & Persistence Mounts ──────────────────────────
   "remoteEnv": {
-    // Descomenta solo si tu docker-compose.dev.yml sigue levantando postgres/redis:
+    // Uncomment only if your docker-compose.dev.yml still starts postgres/redis:
     // "DATABASE_URL": "postgres://postgres:postgres@postgres:5432/app",
     // "REDIS_URL": "redis://redis:6379"
   },
   "mounts": [
-    // Persiste la configuración del CLI de Claude y el estado de usuario
-    // entre rebuilds del contenedor.
+    // Persists Claude CLI configuration and user state across container
+    // rebuilds.
     "source=${localWorkspaceFolder}/.root-home,target=/root/config_backup,type=bind",
-    // Acceso al Docker del host — permite ejecutar `docker logs/inspect`
-    // sobre servicios hermanos del compose (postgres, redis, etc.).
+    // Host Docker access — lets you run `docker logs/inspect` against sibling
+    // compose services (postgres, redis, etc.).
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-    // Opcional: reutiliza tu auth de GitHub CLI del host y evita
-    // `gh auth login` en cada rebuild. Descomenta si te sirve:
+    // Optional: reuse the host's GitHub CLI auth to avoid `gh auth login` on
+    // every rebuild. Uncomment if useful:
     // "source=${localEnv:HOME}/.config/gh,target=/root/.config/gh,type=bind,readonly"
   ],
 
   // ── Post-Start Automation ───────────────────────────────────────────────
-  // VNC y tun2socks se inicializan desde entrypoint.sh.
-  // script.sh se ejecuta después del arranque del contenedor.
+  // The VNC desktop stack starts from entrypoint.sh (the tun2socks block there
+  // is currently disabled). script.sh runs after the container starts.
   "postStartCommand": "bash .devcontainer/script.sh",
 
   // ── VS Code Editor Extensions & Settings ────────────────────────────────
@@ -64,7 +64,7 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "tamasfe.even-better-toml",
-        // ── Base de datos (SQLite / Postgres desde el host) ──
+        // ── Database (SQLite / Postgres from the host) ──
         "mtxr.sqltools",
         "mtxr.sqltools-driver-sqlite",
         "mtxr.sqltools-driver-pg",
@@ -73,10 +73,10 @@
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
         "dsznajder.es7-react-js-snippets",
-        // ── GitHub (reemplaza la integración de GitLab) ──
+        // ── GitHub ──
         "GitHub.vscode-pull-request-github",
         "GitHub.vscode-github-actions",
-        // ── Docker (servicios hermanos del compose) ──
+        // ── Docker (sibling compose services) ──
         "ms-azuretools.vscode-docker",
         // ── Misc ──
         "EditorConfig.EditorConfig"
@@ -88,7 +88,7 @@
         "[python]": {
           "editor.defaultFormatter": "ms-python.python"
         },
-        // Formateo global
+        // Global formatting
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "[typescript]": {
@@ -116,7 +116,7 @@
           "javascriptreact",
           "typescriptreact"
         ],
-        // TypeScript (usa la versión del proyecto, no la de VS Code)
+        // TypeScript (use the project version, not VS Code's)
         "typescript.tsdk": "node_modules/typescript/lib",
         // Debug
         "debug.node.autoAttach": "disabled",

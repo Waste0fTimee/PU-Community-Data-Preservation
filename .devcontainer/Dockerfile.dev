@@ -1,5 +1,5 @@
 # ── Devcontainer Dockerfile ─────────────────────────────────────────
-# Single-stage dev image: Python + Node/React + Electron + VNC + Patchright + Claude Code + Graphify
+# Single-stage dev image: Python + Node + Electron + VNC + Patchright + Claude Code + Graphify
 # Build: docker compose -f .devcontainer/docker-compose.dev.yml build
 FROM python:3.12-slim-bookworm
 
@@ -75,6 +75,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     novnc \
     && rm -rf /var/lib/apt/lists/*
 
+# ── Category 4b: noVNC Default Scaling ─────────────────────────────
+# The packaged viewer opens unscaled (1:1), which clips the 1920x1080
+# framebuffer in smaller browser windows. Default to a scaled display while
+# still honoring an explicit ?resize=... URL parameter.
+RUN sed -i "s|UI.initSetting('resize', 'off');|UI.initSetting('resize', 'scale'); if (WebUtil.getConfigVar('resize') === null) { WebUtil.setSetting('resize', 'scale'); UI.updateSetting('resize'); }|" /usr/share/novnc/app/ui.js \
+    && grep -q "initSetting('resize', 'scale')" /usr/share/novnc/app/ui.js
+
 # ── Category 5: Audio / ALSA Tools (reCAPTCHA Audio & Error Suppression) ─
 RUN apt-get update && apt-get install -y --no-install-recommends \
     alsa-utils \
@@ -94,7 +101,9 @@ RUN pip install --no-cache-dir uv graphifyy pyyaml \
 
 # ── Category 7: Node.js, NVM & Global NPM Packages ────────────────
 ENV NVM_DIR=/root/.nvm
-ARG NODE_VERSION=20
+# Electron 45 requires Node >=22.12.0. Keep this default aligned with
+# .devcontainer/.env.dev so a plain image build satisfies the engine check.
+ARG NODE_VERSION=22
 
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
     && . "$NVM_DIR/nvm.sh" \
@@ -104,13 +113,13 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | b
     && npm install -g pnpm@10.11.1 @anthropic-ai/claude-code pm2
 
 
-# ── Category 9: Python Application Dependencies ───────────────────
+# ── Category 8: Python Application Dependencies ───────────────────
 COPY ./requirements /requirements
 ARG BUILD_ENV=dev
 
 RUN uv pip install --system --no-cache-dir -r /requirements/${BUILD_ENV}.txt
 
-# ── Category 10: Patchright / Playwright Browsers ─────────────────
+# ── Category 9: Patchright / Playwright Browsers ──────────────────
 RUN patchright install chromium chrome 2>&1 || true
 
 # ── Workspace Setup & Dev Entrypoint ──────────────────────────────

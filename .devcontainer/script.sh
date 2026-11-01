@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ── postStart Workspace Setup Script ────────────────────────────────────────
 # Executes during VS Code's postStart phase.
-# Handles dynamic runtime configurations: Git identity, Claude persistence,
-# GitLab CLI login, WakaTime settings, Git hooks, and PM2 service startup.
+# Configures NVM, Git identity, Claude Code state persistence, graphify
+# integration, repository skills, and the patchright browser runtime.
 # -----------------------------------------------------------------------------
 set -e
 
-# ── 1. Load NVM environment & NPM Registry ───────────────────────────────────
-# Ensures Node.js and PM2 are available in this shell session
+# ── 1. Load NVM Environment ──────────────────────────────────────────────────
+# Ensures Node.js is available in this shell session.
 export NVM_DIR="/root/.nvm"
 if [ -s "$NVM_DIR/nvm.sh" ]; then
     . "$NVM_DIR/nvm.sh"
@@ -25,7 +25,7 @@ if [ -n "$GITHUB_EMAIL" ]; then
 fi
 
 
-# ── 4. Claude Code Persistence Setup ─────────────────────────────────────────
+# ── 3. Claude Code Persistence Setup ─────────────────────────────────────────
 # Symlinks Claude CLI state to persistent host mount (/root/config_backup)
 # so state survives container rebuilds.
 echo "🔧 Setting up Claude Code state persistence..."
@@ -53,11 +53,11 @@ ln -sfn "$LOCAL_BACKUP/.claude.json" "$CLAUDE_CONFIG"
 echo "✅ Claude Code state persistence active."
 
 
-# ── 6. Graphify Knowledge Graph Integration ──────────────────────────────────
+# ── 4. Graphify Knowledge Graph Integration ──────────────────────────────────
 echo "🔧 Registering graphify integration with Claude..."
 graphify claude install || true
 
-# ── 7. Install Repository Skills for Claude Code ─────────────────────────────
+# ── 5. Install Repository Skills for Claude Code ─────────────────────────────
 # Skills versioned under .devcontainer/skills/ are symlinked into Claude's
 # personal skills directory so their /<skill> commands resolve on a fresh
 # container. Symlinks (not copies) keep the repo copy canonical: edits take
@@ -75,7 +75,7 @@ if [ -d "/workspace/.devcontainer/skills" ]; then
 fi
 
 
-# ── 11. E2E Browser Runtime (patchright / Playwright Chromium) ───────────────
+# ── 6. E2E Browser Runtime (patchright / Playwright Chromium) ────────────────
 # The e2e suite (`pytest -m e2e`) drives a real patched Chromium. The browsers
 # are downloaded into $PLAYWRIGHT_BROWSERS_PATH (/opt/pw-browsers), which lives
 # in the container's writable layer — so a recreated container loses them and
@@ -91,6 +91,23 @@ if command -v patchright >/dev/null 2>&1; then
         echo "🔧 Installing patchright Chromium for the e2e suite..."
         patchright install chromium \
             || echo "⚠️  patchright install failed. Run 'patchright install chromium' before the e2e suite."
+    fi
+fi
+
+# ── 7. Electron Desktop App ──────────────────────────────────────────────────
+# The window renders on the Xvfb display started by start-vnc.sh, so it is
+# visible over noVNC as soon as it launches. Set ENABLE_ELECTRON=false in
+# .env.dev to boot the container without the app.
+# Never install dependencies here: a container start must not depend on the
+# network. A missing install is reported instead.
+if [ "${ENABLE_ELECTRON:-true}" = "true" ]; then
+    if [ ! -x "/workspace/apps/desktop/node_modules/electron/dist/electron" ]; then
+        echo "⚠️  Electron is not installed. Run .devcontainer/electron.sh --install."
+    elif pgrep -x electron >/dev/null 2>&1; then
+        echo "✅ Electron already running."
+    else
+        echo "🔧 Starting Electron desktop app (visible over noVNC)..."
+        nohup /workspace/.devcontainer/electron.sh > /tmp/electron-dev.log 2>&1 &
     fi
 fi
 
