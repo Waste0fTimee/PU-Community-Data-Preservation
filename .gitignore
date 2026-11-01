@@ -1,2 +1,6 @@
 apps/desktop/node_modules
 apps/desktop/package-lock.json
+.env.dev
+project_dump.md
+.root-home/*
+utility_scripts/

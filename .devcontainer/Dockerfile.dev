@@ -1,0 +1,123 @@
+# ── Devcontainer Dockerfile ─────────────────────────────────────────
+# Single-stage dev image: Python + Node/React + Electron + VNC + Patchright + Claude Code + Graphify
+# Build: docker compose -f .devcontainer/docker-compose.dev.yml build
+FROM python:3.12-slim-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
+
+SHELL ["/bin/bash", "-c"]
+
+# ── Category 1: Base Build & System Utilities ──────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    make \
+    build-essential \
+    pkg-config \
+    curl \
+    wget \
+    jq \
+    tree \
+    nano \
+    lsof \
+    iproute2 \
+    ca-certificates \
+    gnupg \
+    ffmpeg \
+    zip \
+    unzip \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Category 2: Playwright / Patchright / Electron Headless Deps ───
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libcups2 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libgbm1 \
+    libnss3 \
+    libasound2 \
+    libxshmfence1 \
+    libx11-xcb1 \
+    libxcb-dri3-0 \
+    libdrm2 \
+    libxdamage1 \
+    libxrandr2 \
+    libatk1.0-0 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
+    libxcomposite1 \
+    libxfixes3 \
+    libxext6 \
+    libxi6 \
+    libxtst6 \
+    libgtk2.0-0 \
+    libgbm-dev \
+    libnotify-dev \
+    libxss1 \
+    libsecret-1-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Category 3: Electron Build / Packaging Tools ───────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    fakeroot \
+    dpkg \
+    rpm \
+    binutils \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Category 4: X11 & VNC Desktop Environment Stack ────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    xauth \
+    x11vnc \
+    python3-websockify \
+    novnc \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Category 5: Audio / ALSA Tools (reCAPTCHA Audio & Error Suppression) ─
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    alsa-utils \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /root && cat > /root/.asoundrc << 'EOF'
+pcm.!default {
+    type null
+}
+ctl.!default {
+    type null
+}
+EOF
+
+# ── Category 6: Python Engine & Tools (uv + graphify) ──────────────
+RUN pip install --no-cache-dir uv graphifyy pyyaml \
+    && graphify install
+
+# ── Category 7: Node.js, NVM & Global NPM Packages ────────────────
+ENV NVM_DIR=/root/.nvm
+ARG NODE_VERSION=20
+
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
+    && . "$NVM_DIR/nvm.sh" \
+    && nvm install ${NODE_VERSION} \
+    && nvm use ${NODE_VERSION} \
+    && nvm alias default ${NODE_VERSION} \
+    && npm install -g pnpm@10.11.1 @anthropic-ai/claude-code pm2
+
+
+# ── Category 9: Python Application Dependencies ───────────────────
+COPY ./requirements /requirements
+ARG BUILD_ENV=dev
+
+RUN uv pip install --system --no-cache-dir -r /requirements/${BUILD_ENV}.txt
+
+# ── Category 10: Patchright / Playwright Browsers ─────────────────
+RUN patchright install chromium chrome 2>&1 || true
+
+# ── Workspace Setup & Dev Entrypoint ──────────────────────────────
+WORKDIR /workspace
+
+COPY .devcontainer/start-vnc.sh /usr/local/bin/start-vnc.sh
+COPY .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/start-vnc.sh /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["sleep", "infinity"]

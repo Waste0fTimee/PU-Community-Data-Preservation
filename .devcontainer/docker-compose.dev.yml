@@ -1,0 +1,76 @@
+version: "3.7"
+
+services:
+  pucdp:
+    container_name: devcontainer_pucdp_frontend
+    image: pucdp-headless-dev
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile.dev
+      args:
+        - NODE_VERSION
+        - BUILD_ENV
+    platform: linux/amd64
+    user: root
+    restart: on-failure:3
+    # Keep container alive for interactive development.
+    # VNC + any in-container boot services are started by entrypoint.sh before CMD.
+    command: sleep infinity
+    env_file:
+      - .env.dev
+    volumes:
+      # Source code mount (bind) — repo's data/ is already persistent via this
+      - ..:/workspace:cached
+    ports:
+      # Two kinds of publish are allowed here; a third is not.
+      #
+      # Allowed: a bind whose host number DIFFERS from its container number
+      # (5910->5900, 6090->6080), because VS Code forwards the container port
+      # on the same number and cannot collide with it.
+      #
+      # Forbidden: a bind whose host number EQUALS the container number for a
+      # port VS Code forwards. Those binds take the host's loopback port, so
+      # the forward of the same number has nothing left to bind and fails.
+      # VS Code owns 8000 (Python API) and 5173 (Vite dev) via
+      # devcontainer.json `forwardPorts` — do not add host binds for them.
+      - "127.0.0.1:5911:5901" # VNC
+      - "127.0.0.1:6091:6081" # noVNC WebSocket / Web (iframe)
+      # VS Code owns 8001 (Python API) and 5174 (Vite dev) via
+      # devcontainer.json `forwardPorts` — do not add host binds for them.# - "127.0.0.1:8010:8000" # Python API (host alias)
+    networks:
+      - pucdp_network
+    # depends_on:
+    #   - postgres
+    #   - redis
+
+  # ── POSTGRES ─────────────────────────────────────────────────────────────
+  # Keep if you persist scraped data / user progress server-side. If your app
+  # is strictly local-first (SQLite inside the Electron app), remove this
+  # service and the `depends_on` entry above.
+  # postgres:
+  #   image: postgres:15-bookworm
+  #   container_name: pucdp_postgres_dev
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env.dev # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD
+  #   # NO host port: reachable only on pucdp_network as `postgres`.
+  #   # Host/admin access: docker exec -it pucdp_postgres_dev psql -U postgres
+  #   volumes:
+  #     - ../data/postgres:/var/lib/postgresql/data
+  #   networks:
+  #     - pucdp_network
+
+  # # ── REDIS ────────────────────────────────────────────────────────────────
+  # # Keep if you use Celery/RQ/bullmq for scraping jobs or caching. Remove
+  # # otherwise (and drop the `depends_on` entry above).
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: pucdp_redis_dev
+  #   restart: unless-stopped
+  #   # NO host port: internal-only (apps reach it as `redis` on pucdp_network).
+  #   networks:
+  #     - pucdp_network
+
+networks:
+  pucdp_network:
+    driver: bridge

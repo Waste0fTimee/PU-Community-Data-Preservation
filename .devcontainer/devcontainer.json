@@ -1,33 +1,128 @@
-
 {
+  // ── Container Metadata ──────────────────────────────────────────────────
   "name": "PU Community Data Preservation",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
-  "forwardPorts": [5173],
+  // TODO: renombra "service" si cambias el nombre del servicio en docker-compose.dev.yml
+  "service": "pucdp",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "root",
+
+  // ── Docker Compose Configuration ────────────────────────────────────────
+  "dockerComposeFile": [
+    "./docker-compose.dev.yml"
+  ],
+  "shutdownAction": "stopCompose",
+
+  // ── Network Ports & Labels ──────────────────────────────────────────────
+  // Forwarded port number == container port number. Do not add same-numbered
+  // host binds in docker-compose.dev.yml — they silently steal the port the
+  // forward needs (see original note). Ports:
+  //   8000  → Python backend (uvicorn / fastapi)
+  //   5173  → React renderer (Vite dev server)
+  //   5900  → VNC
+  //   6080  → noVNC web
   "portsAttributes": {
-    "5173": {
-      "label": "Frontend Development",
-      "onAutoForward": "notify"
-    }
+    "5901": { "label": "VNC Server" },
+    "6081": { "label": "noVNC Web" },
+    "8001": { "label": "Python API" },
+    "5174": { "label": "React / Vite Dev" }
   },
-  "postCreateCommand": "pnpm install && cd backend/python && uv sync",
+  "forwardPorts": [
+    8001,
+    5174,
+    5901,
+    6081
+  ],
+
+  // ── Environment Variables & Persistence Mounts ──────────────────────────
+  "remoteEnv": {
+    // Descomenta solo si tu docker-compose.dev.yml sigue levantando postgres/redis:
+    // "DATABASE_URL": "postgres://postgres:postgres@postgres:5432/app",
+    // "REDIS_URL": "redis://redis:6379"
+  },
+  "mounts": [
+    // Persiste la configuración del CLI de Claude y el estado de usuario
+    // entre rebuilds del contenedor.
+    "source=${localWorkspaceFolder}/.root-home,target=/root/config_backup,type=bind",
+    // Acceso al Docker del host — permite ejecutar `docker logs/inspect`
+    // sobre servicios hermanos del compose (postgres, redis, etc.).
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    // Opcional: reutiliza tu auth de GitHub CLI del host y evita
+    // `gh auth login` en cada rebuild. Descomenta si te sirve:
+    // "source=${localEnv:HOME}/.config/gh,target=/root/.config/gh,type=bind,readonly"
+  ],
+
+  // ── Post-Start Automation ───────────────────────────────────────────────
+  // VNC y tun2socks se inicializan desde entrypoint.sh.
+  // script.sh se ejecuta después del arranque del contenedor.
+  "postStartCommand": "bash .devcontainer/script.sh",
+
+  // ── VS Code Editor Extensions & Settings ────────────────────────────────
   "customizations": {
     "vscode": {
       "extensions": [
+        // ── Python backend ──
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "tamasfe.even-better-toml",
+        // ── Base de datos (SQLite / Postgres desde el host) ──
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-sqlite",
+        "mtxr.sqltools-driver-pg",
+        // ── Frontend React / TypeScript ──
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
-        "ms-python.python",
-        "charliermarsh.ruff",
-        "ms-python.vscode-pylance"
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets",
+        // ── GitHub (reemplaza la integración de GitLab) ──
+        "GitHub.vscode-pull-request-github",
+        "GitHub.vscode-github-actions",
+        // ── Docker (servicios hermanos del compose) ──
+        "ms-azuretools.vscode-docker",
+        // ── Misc ──
+        "EditorConfig.EditorConfig"
       ],
       "settings": {
+        // Python
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.formatting.provider": "black",
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.python"
+        },
+        // Formateo global
         "editor.formatOnSave": true,
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
-        }
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[jsonc]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        // ESLint
+        "eslint.validate": [
+          "javascript",
+          "typescript",
+          "javascriptreact",
+          "typescriptreact"
+        ],
+        // TypeScript (usa la versión del proyecto, no la de VS Code)
+        "typescript.tsdk": "node_modules/typescript/lib",
+        // Debug
+        "debug.node.autoAttach": "disabled",
+        // Terminal
+        "terminal.integrated.defaultProfile.linux": "bash"
       }
     }
-  },
-  "remoteUser": "vscode"
+  }
 }
