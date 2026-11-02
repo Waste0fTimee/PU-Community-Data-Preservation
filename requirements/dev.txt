@@ -1,0 +1,7 @@
+# Dependencias de desarrollo
+-r prod.txt
+ruff
+black
+pytest
+pytest-asyncio
+httpx

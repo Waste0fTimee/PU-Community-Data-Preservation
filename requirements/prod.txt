@@ -1,0 +1,11 @@
+# Dependencias de producción
+fastapi
+uvicorn[standard]
+pydantic
+sqlalchemy
+alembic
+psycopg[binary]
+redis
+python-dotenv
+patchright
+playwright

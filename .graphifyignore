@@ -1,0 +1,30 @@
+# .graphifyignore — keep the knowledge graph focused on real project source.
+# Gitignore syntax (last match wins, `!` re-includes). Read in addition to
+# .gitignore, so this file still applies when running with --no-gitignore.
+#
+# Not listed because graphify already skips them: .git/, node_modules/,
+# dist/, build/, .cache/, graphify-out/ and lockfiles (package-lock.json, *.lock).
+
+# Devcontainer HOME bind-mount: ~18 MB of Claude Code state, plugin
+# marketplace and session logs. Never project source.
+.root-home/
+
+# Generated concatenation of the entire repo (57 KB of duplicated source),
+# produced by utility_scripts/concat_project.py.
+project_dump.md
+
+# Local-only dev helper (gitignored, not part of the published project).
+utility_scripts/
+
+# Agent/harness configuration (hook wiring), not application code.
+.claude/
+
+# Secrets and machine-local environment. `.env.example` is the committed
+# template and stays graphable; `.env.dev` holds tokens/passwords.
+.env
+.env.*
+!.env.example
+
+# Aspirational directory plan — lists backend/, packages/, docs/, etc. that
+# do not exist yet. Indexing it would create phantom modules in the graph.
+tree.md
