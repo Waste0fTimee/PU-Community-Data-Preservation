@@ -80,7 +80,7 @@ Windows and Linux are the supported platforms. They differ in how the collector 
 - **Windows — native, no Docker.** The desktop app and ADB run directly on the host. Distribution target: one-click installer. Docker Desktop/WSL2 cannot reliably pass an Android device through, so the Windows build must not depend on a container.
 - **Linux — Docker Compose.** The collector runs in a Docker Compose stack with the phone mapped in (`/dev/bus/usb`) and udev permissions configured.
 
-The dev container remains the standard *development* environment on both platforms; the split above applies to how end users collect data.
+The dev container remains the standard _development_ environment on both platforms; the split above applies to how end users collect data.
 
 ## Development Environment
 
@@ -214,6 +214,18 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the develo
 ## Open Questions
 
 The following items still need community discussion. Items marked ✅ are resolved; 🔄 are in progress with a direction chosen but details open; ❓ remain fully open.
+
+# Open Questions (English)
+
+For each data category, four independent questions must be answered before the category can be scoped:
+
+- **Does it exist locally?** If it only lives on TiMi's servers, we cannot capture it.
+
+- **Where does it live locally?** Path, file, format — this determines the `adb pull` command.
+
+- **Can we access it?** Root, emulator, Shizuku, or Charles's modified client.
+
+- **Should we preserve it?** Community value vs. privacy risk vs. legal risk.
 
 - ✅ **Canonical archive vs. database:** GitHub is the canonical public archive. Any community database is a derived, rebuildable index over it.
 - ✅ **Platforms:** Windows runs natively without Docker (USB mapping into Docker Desktop/WSL2 is unreliable); Linux runs the collector in Docker Compose with USB device passthrough.
